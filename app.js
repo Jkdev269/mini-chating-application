@@ -6,7 +6,7 @@ app.use(express.static(path.join(__dirname,'public')))
 app.get('/',(req,res)=>{
 res.send('Testing api')
 })
-const server=app.listen(8080,()=>{console.log('server is running port 8080');
+const server=app.listen(4000,()=>{console.log('server is running port 4000');
 })
 const io=socketio(server)
 io.on('connection',socket=>{

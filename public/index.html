@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        #join, #chat {
+            width: 300px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        #join {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #roomInput, #nameInput {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #joinRoom {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #joinRoom:hover {
+            background-color: #0056b3;
+        }
+
+        #chat {
+            display: none;
+            flex-direction: column;
+            height: 400px;
+            display: flex;
+        }
+
+        #message {
+            flex: 1;
+            overflow-y: auto;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #message li {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            max-width: 80%;
+            border-radius: 8px;
+            margin: 4px;
+        }
+
+        #message .you {
+            align-self: flex-end;
+            background-color: #007bff;
+            color: white;
+            text-align: right;
+        }
+
+        #message .user {
+            align-self: flex-start;
+            background-color: #f1f1f1;
+            color: #333;
+        }
+
+        #messageInput {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        @media (max-width: 600px) {
+            #join, #chat {
+                padding: 12px;
+            }
+
+            #joinRoom {
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            #messageInput {
+                padding: 6px;
+            }
+
+            #message li {
+                padding: 6px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="join">
+        <input id="roomInput" autocomplete="off" placeholder="Enter room name">
+        <input id="nameInput" autocomplete="off" placeholder="Enter your name">
+        <button id="joinRoom">Join Room</button>
+    </div>
+    <div id="chat">
+        <ul id="message"></ul>
+        <input id="messageInput" autocomplete="off" placeholder="Type a message">
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let userName = '';
+
+        document.getElementById('joinRoom').addEventListener('click', () => {
+            const room = document.getElementById('roomInput').value.trim();
+            userName = document.getElementById('nameInput').value.trim();
+            if (room && userName) {
+                socket.emit('joinRoom', { room, userName });
+                document.getElementById('join').style.display = 'none';
+                document.getElementById('chat').style.display = 'flex';
+            } else {
+                alert('Please enter both room name and your name.');
+            }
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('message', (data) => {
+            console.log('Received message:', data.message);
+            const item = document.createElement('li');
+            if (data.userName === userName) {
+                item.textContent = `You: ${data.message}`;
+                item.className = 'you';
+            } else {
+                item.textContent = `${data.userName}: ${data.message}`;
+                item.className = 'user';
+            }
+           
+            const messages = document.getElementById('message');
+            messages.appendChild(item);
+            messages.scrollTop = messages.scrollHeight; // Scroll to the bottom
+        });
+
+        document.getElementById('messageInput').addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                const input = event.target;
+                const message = input.value.trim();
+                if (message) {
+                    const room = document.getElementById('roomInput').value.trim();
+                    input.value = '';
+                    const item = document.createElement('li');
+                    item.textContent = `You: ${message}`;
+                    item.className = 'you';
+                    // document.getElementById('message').appendChild(item);
+                    socket.emit('message', { room, message, userName }, (response) => {
+                        console.log('Server responded:', response);
+                    });
+                }
+            }
+        });
+    </script>
+   </body>
+</html>
